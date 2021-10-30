@@ -1,0 +1,4 @@
+first_job:
+  stage: build
+  script:
+    - echo "Hello World"
