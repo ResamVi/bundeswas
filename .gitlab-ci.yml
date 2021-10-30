@@ -14,7 +14,10 @@ build:
 
 deploy:
   stage: deploy
-  image: hashicorp/terraform:1.0.10
+  image:
+    name: hashicorp/terraform:1.0.10
+    entrypoint:
+      - /usr/bin/env # the terraform binary is used as entrypoint... making it fail prematurely
   script:
     - cd infra
     - terraform init
