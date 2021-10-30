@@ -4,7 +4,7 @@ stages:
 
 build:
   stage: build
-  image: golang/1.17.2-alpine
+  image: golang:1.17.2-alpine
   script:
     - cd first/hello
     - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main main.go
