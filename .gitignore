@@ -1,0 +1,8 @@
+first/.aws-sam
+.idea
+.DS_STORE
+first/hello/main
+first/hello/main.zip
+infra/.terraform
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
