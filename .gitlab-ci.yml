@@ -1,8 +1,21 @@
-first_job:
+stage:
+  - build
+  - deploy
+
+build:
   stage: build
+  image: golang/1.17.2-alpine
   script:
     - cd first/hello
     - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main main.go
-    - cd ../../infra
+  artifacts:
+    paths:
+      - first/hello/main
+
+deploy:
+  stage: deploy
+  image: hashicorp/terraform:1.0.10
+  script:
+    - cd infra
     - terraform init
     - terraform apply -auto-approve
