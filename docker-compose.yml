@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  server:
+    container_name: "server"
+    build: .
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=localhost
+      - DBUSER=root
+      - PASSWORD=password
+      - DBNAME=wasletztepreis
+      - DBPORT=5432
+    networks:
+      - main
+
+  # docker run --rm --name postgres_tmp --network="host" -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=password -e POSTGRES_DB=mydatabase postgres
+  postgres:
+    container_name: "postgres"
+    image: "postgres:14.0"
+    restart: always
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=wasletztepreis
+    volumes:
+      - wasletztepreis_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - main
+
+volumes:
+  wasletztepreis_data:
+
+networks:
+  main:
+    external: true
