@@ -1,0 +1,9 @@
+[package]
+name = "wasletztegesetz"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sqlx = { version = "0.6", features = [ "postgres", "runtime-tokio-rustls" ] }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
