@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 // We require 'Serialize' for 'to_string_pretty' to pretty print to console
 // 'Deserialize' for HTTP response body -> rust struct mapping
 
-// TODO: Maybe Generics are possible here?
+// TODO: Maybe Generics are possible here? I've tried but man is it HARD
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")] // just for num_found -> numFound :S
 struct Response {
@@ -35,6 +35,7 @@ struct Aktivitaet {
     vorgangsbezug: Vec<Vorgangsbezug>,
 }
 
+/// Allows for pretty printing JSON
 impl fmt::Display for Aktivitaet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", serde_json::to_string_pretty(self).unwrap())
@@ -65,8 +66,8 @@ struct Vorgangsbezug {
 fn main() {
     let bundestag = BundestagsAPI::new();
 
-    for i in bundestag.aktivitaeten().take(5) {
-        println!("{}", i);
+    for i in bundestag.aktivitaeten().take(101) {
+        println!("{}", i.id);
     };
 }
 
@@ -106,54 +107,65 @@ impl BundestagsAPI {
     /// Get a list of all Aktivitäten.
     // TODO: Magic values
     fn aktivitaeten(self) -> impl Iterator<Item = Aktivitaet> {
-        Iter::new(self.client, String::from("https://search.dip.bundestag.de/api/v1/aktivitaet"))
+        PaginatedResource::new(self.client, "https://search.dip.bundestag.de/api/v1/aktivitaet")
     }
 }
 
-// Allows for consuming paginated results.
-// DIP implements paginated results with a cursor parameter that needs to be appended to the next
-// request.
+// Allows for consuming resources that are paginated and must 
+// be retrieved in multiple GET requests ("Folgeanfragen").
 //
-// Retrieves pages and when all entries of the page are consumed dispatches another request for the
-// next page.
+// DIP specifies paginated results via a "cursor" 
+// parameter that needs to be appended to the next request.
+//
 // TODO: Generic implementation
-struct Iter {
+struct PaginatedResource {
+    // Static
     client: Client,
     url: String,
+
+    // Is mutated while we iterate
     cursor: String,
     entries: Vec<Aktivitaet>,
 }
 
-impl Iter {
-    fn new(client: Client, url: String) -> Iter {
-        // TODO: Error handling
-        let body = client.get(&url).send().unwrap().text().unwrap();
-        let mut t: Response = serde_json::from_str(&body).unwrap();
-        t.documents.reverse();
+impl PaginatedResource {
 
-        Iter {
+    /// A PaginatedResource requires a http client to dispatch more GET requests
+    /// when the current page has been exhausted.
+    fn new(client: Client, url: &str) -> PaginatedResource {
+        PaginatedResource {
             client,
-            url,
-            cursor: String::from(""),
-            entries: t.documents,
+            url: url.to_string(),
+            cursor: String::new(),
+            entries: Vec::new(),
         }
     }
 }
 
-impl iter::Iterator for Iter {
+impl iter::Iterator for PaginatedResource {
     type Item = Aktivitaet;
 
     fn next(&mut self) -> Option<Aktivitaet> {
+        // TODO: Stop when at the end (cursor doesn't change)
+
         // Refill when empty
         if self.entries.is_empty() {
-            let url = format!("{}?cursor={}", self.url, self.cursor);
+            let mut url = self.url.clone();
+
+            if !self.cursor.is_empty() {
+                url.push_str("?cursor=");
+                url.push_str(self.cursor.as_str());
+            }
 
             // TODO: handle error
-            let body = self.client.get(url).send().unwrap().text().unwrap();
-            let mut t: Response = serde_json::from_str(&body).unwrap();
-            t.documents.reverse();
+            let raw_response = self.client.get(url).send().unwrap().text().unwrap();
+            let mut response: Response = serde_json::from_str(&raw_response).unwrap();
+            response.documents.reverse();
 
-            self.entries = t.documents;
+            // TODO: check if cursor didnt change (signifies no more resources)
+
+            self.cursor = response.cursor;
+            self.entries = response.documents;
         }
 
         self.entries.pop()

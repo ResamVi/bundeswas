@@ -11,6 +11,10 @@ path = "src/db/main.rs"
 name = "poll"
 path = "src/poll/main.rs"
 
+[[bin]]
+name = "generics"
+path = "src/generics/main.rs"
+
 [dependencies]
 # For some light ORM work with sql::FromRow
 sqlx = { version = "0.6", features = [ "postgres", "runtime-tokio-rustls" ] }
