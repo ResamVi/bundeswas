@@ -1,33 +1,16 @@
 [package]
 name = "wasletztegesetz"
 version = "0.1.0"
+authors = ["Julien Midedji <julien.midedji@gmail.com>"]
+description = """
+wasletztegesetz is a web application showing Bundestagsabstimmungen
+"""
 edition = "2021"
 
 [[bin]]
-name = "db"
-path = "src/db/main.rs"
+name = "wasletztegesetz"
+path = "poller/main.rs"
 
-[[bin]]
-name = "poll"
-path = "src/poll/main.rs"
-
-[[bin]]
-name = "generics"
-path = "src/generics/main.rs"
-
-[dependencies]
-# For some light ORM work with sql::FromRow
-sqlx = { version = "0.6", features = [ "postgres", "runtime-tokio-rustls" ] }
-# Needed for sqlx
-tokio = { version = "1", features = ["full"] }
-# Needed to map a stream of query results to structs
-futures = "0.3"
-# http client
-reqwest = { version = "0.11.12", features = ["blocking"] }
-
-# json serializing
-serde = "1.0.147"
-serde_json = "1.0"
-
-# pretty json for debugging
-jsonxf = "1.1.1"
+# I'm using workspaces because of "rust-analyzer failed to find workspace" error in my editor.
+[workspace]
+members = [ "poller", "dip" ]

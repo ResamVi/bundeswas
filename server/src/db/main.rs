@@ -5,7 +5,6 @@ use futures::TryStreamExt; // access to try_next
 struct Example {
     id: i32,
     name: String,
-    Vec
 }
 
 #[derive(FromRow)]

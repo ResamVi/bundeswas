@@ -1,9 +1,11 @@
-use core::fmt;
-use core::iter;
-
+/// This crate implements calls to the DIP (Dokumentations- und Informationsystem für
+/// Parlamentsmaterialien)
+///
+/// See their documentation [here](https://dip.bundestag.de/documents/informationsblatt_zur_dip_api.pdf)
 use std::str::FromStr;
 use reqwest::blocking::Client;
 use reqwest::header;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 // Notes on structs:
@@ -12,64 +14,13 @@ use serde::{Deserialize, Serialize};
 
 // TODO: Maybe Generics are possible here? I've tried but man is it HARD
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")] // just for num_found -> numFound :S
-struct Response {
+#[serde(rename_all = "camelCase")] // just for num_found -> numFound ...
+struct Response<T> {
     num_found: i32,
-    documents: Vec<Aktivitaet>,
+    documents: Vec<T>,
     cursor: String,
 }
 
-
-#[derive(Serialize, Deserialize)]
-struct Aktivitaet {
-    id: String,
-    aktivitaetsart: String,
-    typ: String,
-    vorgangsbezug_anzahl: i32,
-    dokumentart: String,
-    wahlperiode: i32,
-    datum: String, // TODO: type ok?
-    titel: String,
-
-    fundstelle: Fundstelle,
-    vorgangsbezug: Vec<Vorgangsbezug>,
-}
-
-/// Allows for pretty printing JSON
-impl fmt::Display for Aktivitaet {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", serde_json::to_string_pretty(self).unwrap())
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct Fundstelle {
-    pdf_url: String,
-    id: String,
-    dokumentnummer: String,
-    datum: String, // TODO: type
-    dokumentart: String,
-    drucksachetyp: String,
-    herausgeber: String,
-    urheber: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Vorgangsbezug {
-    vorgangsposition: String,
-    vorgangstyp: String,
-    titel: String,
-    id: String,
-}
-
-
-fn main() {
-    let bundestag = BundestagsAPI::new();
-
-    for i in bundestag.aktivitaeten().take(101) {
-        println!("{}", i.id);
-    };
-}
 
 // TODO: This should be a module I think?
 
@@ -77,14 +28,13 @@ fn main() {
 /// what they coined "Dokumentations- und Informationssystem" (DIP).
 ///
 /// We have permission for 25 parallel API calls at most.
-struct BundestagsAPI { 
+struct DIP { 
     // HTTP dispatcher
     client: Client,
 }
 
-impl BundestagsAPI {
-
-    fn new() -> BundestagsAPI {
+impl DIP {
+    fn new() -> DIP {
         // Bundestag requires API-Key
         // TODO: Request custom key at parlamentsdokumentation@bundestag.de
         let mut headers = header::HeaderMap::new();
@@ -99,7 +49,7 @@ impl BundestagsAPI {
             .build()
             .unwrap();
 
-        BundestagsAPI { 
+        DIP { 
             client,
         }
     }
@@ -118,34 +68,36 @@ impl BundestagsAPI {
 // parameter that needs to be appended to the next request.
 //
 // TODO: Generic implementation
-struct PaginatedResource {
+struct PaginatedResource<T> {
     // Static
     client: Client,
     url: String,
 
     // Is mutated while we iterate
     cursor: String,
-    entries: Vec<Aktivitaet>,
+    entries: Vec<T>,
+    response: String,
 }
 
-impl PaginatedResource {
+impl<T> PaginatedResource<T> {
 
     /// A PaginatedResource requires a http client to dispatch more GET requests
     /// when the current page has been exhausted.
-    fn new(client: Client, url: &str) -> PaginatedResource {
+    fn new(client: Client, url: &str) -> PaginatedResource<T> {
         PaginatedResource {
             client,
             url: url.to_string(),
             cursor: String::new(),
             entries: Vec::new(),
+            response: String::new(),
         }
     }
 }
 
-impl iter::Iterator for PaginatedResource {
-    type Item = Aktivitaet;
+impl<T: DeserializeOwned> iter::Iterator for PaginatedResource<T> {
+    type Item = T;
 
-    fn next(&mut self) -> Option<Aktivitaet> {
+    fn next(&mut self) -> Option<Self::Item> {
         // TODO: Stop when at the end (cursor doesn't change)
 
         // Refill when empty
@@ -158,8 +110,8 @@ impl iter::Iterator for PaginatedResource {
             }
 
             // TODO: handle error
-            let raw_response = self.client.get(url).send().unwrap().text().unwrap();
-            let mut response: Response = serde_json::from_str(&raw_response).unwrap();
+            self.response = self.client.get(url).send().unwrap().text().unwrap();
+            let mut response: Response<Self::Item> = serde_json::from_str(&self.response).unwrap();
             response.documents.reverse();
 
             // TODO: check if cursor didnt change (signifies no more resources)
