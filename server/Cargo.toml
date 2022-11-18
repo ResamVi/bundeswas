@@ -11,6 +11,19 @@ edition = "2021"
 name = "wasletztegesetz"
 path = "poller/main.rs"
 
+[[bin]]
+name = "postgres"
+path = "postgres/src/main.rs"
+
 # I'm using workspaces because of "rust-analyzer failed to find workspace" error in my editor.
 [workspace]
-members = [ "poller", "dip" ]
+members = [ "poller", "dip", "db", "postgres", "nonblock" ]
+
+# I'm only doing this because of my LSP not calming down
+[dependencies]
+dip = { path = "./dip" }
+sqlx = { version = "0.6", features = [ "runtime-tokio-native-tls" , "postgres" ] }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+log = "0.4.0"
+env_logger = "0.9.3"

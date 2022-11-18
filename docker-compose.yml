@@ -1,6 +1,16 @@
 version: "3.0"
 
+# TODO: Logs should go somewhere
 services:
+  neo4j:
+    image: neo4j:4.4.14
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    # environment:
+    #   - NEO4J_AUTH=none
+    volumes:
+      - neo4j-data:/data
   postgres:
     container_name: "postgres"
     image: postgres:14.5
@@ -14,5 +24,6 @@ services:
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
+  neo4j-data:
   postgres:
 

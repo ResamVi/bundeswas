@@ -8,11 +8,7 @@ name = "dip"
 path = "lib.rs"
 
 [dependencies]
-reqwest = { version = "0.11.12", features = ["blocking"] }
-
-# json serializing
-serde = { version = "1.0.147", features = ["derive"]}
+ureq = "2.5.0"                                          # http client
+serde = { version = "1.0.147", features = ["derive"]}   # json serializing
 serde_json = "1.0"
-
-# pretty json for debugging
-jsonxf = "1.1.1"
+jsonxf = "1.1.1"                                        # pretty json for debugging
