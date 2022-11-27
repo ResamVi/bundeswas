@@ -4,8 +4,6 @@
 - Was der Unterschied zwischen einem Vorgang und einer Aktivität ist
 
 Features
-- Count down bis zur nächsten Sitzung
-- Gesamtzahlen was evaluiert wurde (Aktivitäten, Plenarprotokolle, Vorgänge, Drucksachen)
 
 - Alle Vorgänge vom Vorgangstyp "Antrag" bei /vorgang suchen
 - Um Parsen zu können wie abgestimmt wurde /vorgangsposition
@@ -19,4 +17,17 @@ Features
 
 Plenarprotokoll -> vorgang?f.plenarprotokoll={id} -> aktivitaet.vorgangsbezug[].id
 
-Vorgang
+TODOs
+- Gesamtzahlen was evaluiert wurde (Aktivitäten, Plenarprotokolle, Vorgänge, Drucksachen)
+- Count down bis zur nächsten Sitzung
+- Man beobachtet dass ein Plenarprotokoll vorhanden ist aber noch kein Link, keine Vorgänge:
+```
+{
+    "titel": "Protokoll der 71. Sitzung des 20. Deutschen Bundestages",
+    "datum": "2022-11-25",
+    "dokumentnummer": "20/71",
+    "pdf_url": "https://dserver.bundestag.de/btp/20/20071.pdf",
+    "vorgaenge": []
+}
+```
+

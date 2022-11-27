@@ -5,7 +5,6 @@ edition = "2021"
 
 [lib]
 name = "dip"
-path = "lib.rs"
 
 [dependencies]
 ureq = "2.5.0"                                          # http client

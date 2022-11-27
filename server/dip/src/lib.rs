@@ -3,12 +3,14 @@
 //!
 //! See their documentation [here](https://dip.bundestag.de/documents/informationsblatt_zur_dip_api.pdf)
 use std::str::FromStr;
-// use reqwest::Client;
-// use reqwest::header;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use aktivitaet::Aktivitaet;
-mod aktivitaet;
+
+pub use model::Aktivitaet;
+use model::Plenarprotokoll;
+use model::Vorgang;
+
+mod model;
 
 // Notes on structs:
 // We require 'Serialize' for 'to_string_pretty' to pretty print to console
@@ -21,7 +23,6 @@ struct Response<T> {
     documents: Vec<T>,
     cursor: String,
 }
-
 
 /// Retrieve resources provided by the Deutscher Bundestag
 /// what they coined "Dokumentations- und Informationssystem" (DIP).
@@ -37,8 +38,16 @@ impl DIP {
     /// Get a list of all Aktivitäten.
     /// Beschränke auf den Bundestag (kein Bundesrat).
     /// Beschränke auf die 20. Legislaturperiode (26.09.2021).
-    pub fn aktivitaeten(self) -> impl Iterator<Item = Aktivitaet> {
+    pub fn aktivitaeten(&self) -> impl Iterator<Item = Aktivitaet> {
         PaginatedResource::new("https://search.dip.bundestag.de/api/v1/aktivitaet?f.zuordnung=BT&f.datum.start=2021-09-26")
+    }
+
+    pub fn plenarprotokolle(&self) -> impl Iterator<Item = Plenarprotokoll> {
+        PaginatedResource::new("https://search.dip.bundestag.de/api/v1/plenarprotokoll?f.zuordnung=BT&f.datum.start=2021-09-26")
+    }
+
+    pub fn vorgaenge(&self, plenarprotokoll_id: String) -> impl Iterator<Item = Vorgang> {
+        PaginatedResource::new(format!("https://search.dip.bundestag.de/api/v1/vorgang?f.zuordnung=BT&f.datum.start=2021-09-26&f.plenarprotokoll={plenarprotokoll_id}").as_str())
     }
 }
 
@@ -88,12 +97,18 @@ impl<T: DeserializeOwned> core::iter::Iterator for PaginatedResource<T> {
             url.push_str("&cursor=");
             url.push_str(self.cursor.replace("+", "%2B").as_str());
         }
-        println!("{}", url);
+
+        // Temporary for debugging. 
+        // So we can copy the link and paste into browser: 
+        // Append apikey instead of as header
+        url.push_str("&apikey=GmEPb1B.bfqJLIhcGAsH9fTJevTglhFpCoZyAAAdhp");
+
+        // println!("{}", url);
 
         // TODO: handle error
         // TODO: self.response still needed?
         let body: String = ureq::get(&url)
-            .set("Authorization", "ApiKey GmEPb1B.bfqJLIhcGAsH9fTJevTglhFpCoZyAAAdhp")
+            // .set("Authorization", "ApiKey GmEPb1B.bfqJLIhcGAsH9fTJevTglhFpCoZyAAAdhp")
             .call()
             .expect("could not GET")
             .into_string()
