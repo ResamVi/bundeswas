@@ -21,13 +21,12 @@ struct Result {
 
 #[derive(Serialize)]
 struct Vorgang {
+    /// Helps with ordering
+    id: String, 
     datum: String,
     titel: String,
     vorgangstyp: String,
-
     initiative: String,
-
-    // TOOMUCH pub deskriptor: Option<Vec<Deskriptor>>,
     beratungsstand: String,
     sachgebiet: String,
 }
@@ -52,6 +51,7 @@ async fn handler() -> Json<Vec<Result>> {
         for vorgang in vorgaenge {
             // println!("{}", vorgang);
             result.vorgaenge.push(Vorgang{ 
+                id: vorgang.id,
                 datum: vorgang.datum,
                 titel: vorgang.titel, 
                 vorgangstyp: vorgang.vorgangstyp,
@@ -60,6 +60,8 @@ async fn handler() -> Json<Vec<Result>> {
                 sachgebiet: vorgang.sachgebiet.unwrap_or_default().join(" "),
             });
         }
+
+        result.vorgaenge.sort_by(|a, b| a.datum.cmp(&b.datum));
 
         results.push(result);
     };

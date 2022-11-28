@@ -30,4 +30,4 @@ TODOs
     "vorgaenge": []
 }
 ```
-
+- Icons von flaticons ersetzen mit stylischen selbstgemalten 8-Bit Icons
