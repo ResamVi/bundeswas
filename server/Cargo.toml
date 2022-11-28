@@ -19,8 +19,12 @@ path = "import/src/main.rs"
 name = "http"
 path = "http/src/main.rs"
 
+[[bin]]
+name = "download"
+path = "download/src/main.rs"
+
 [workspace]
-members = [ "print", "dip", "neo4j", "import", "http" ]
+members = [ "print", "dip", "neo4j", "import", "http", "download" ]
 
 # I'm only doing this because of my LSP not calming down
 [dependencies]

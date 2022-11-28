@@ -64,6 +64,21 @@ pub struct Plenarprotokoll {
     pub vorgangsbezug: Option<Vec<Vorgangsbezug>>,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct PlenarprotokollText {
+    pub id: String,
+    pub datum: String, // TODO: type ok?
+    pub titel: String,
+
+    pub dokumentnummer: String,
+    pub herausgeber: String,
+
+    pub dokumentart: String,
+    pub wahlperiode: i32,
+
+    pub text: String,
+}
+
 
 /// ............
 /// Es gibt Vorgänge die sehr kurz sind:

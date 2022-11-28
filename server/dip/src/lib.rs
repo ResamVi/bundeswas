@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 pub use model::Aktivitaet;
 use model::Plenarprotokoll;
+use model::PlenarprotokollText;
 use model::Vorgang;
 
 mod model;
@@ -44,6 +45,10 @@ impl DIP {
 
     pub fn plenarprotokolle(&self) -> impl Iterator<Item = Plenarprotokoll> {
         PaginatedResource::new("https://search.dip.bundestag.de/api/v1/plenarprotokoll?f.zuordnung=BT&f.datum.start=2021-09-26")
+    }
+
+    pub fn plenarprotokoll_text(&self) -> impl Iterator<Item = PlenarprotokollText> {
+        PaginatedResource::new("https://search.dip.bundestag.de/api/v1/plenarprotokoll-text?f.zuordnung=BT&f.datum.start=2021-09-26")
     }
 
     pub fn vorgaenge(&self, plenarprotokoll_id: String) -> impl Iterator<Item = Vorgang> {
