@@ -76,7 +76,7 @@ pub struct PlenarprotokollText {
     pub dokumentart: String,
     pub wahlperiode: i32,
 
-    pub text: String,
+    pub text: Option<String>,
 }
 
 
