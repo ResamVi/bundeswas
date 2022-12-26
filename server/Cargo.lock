@@ -962,6 +962,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "parser"
+version = "0.1.0"
+dependencies = [
+ "dip",
+ "nom",
+]
+
+[[package]]
 name = "paste"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1753,6 +1761,7 @@ dependencies = [
  "env_logger",
  "futures",
  "log",
+ "nom",
  "serde",
  "serde_json",
  "sqlx",

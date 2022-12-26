@@ -2,9 +2,8 @@
 //! Parlamentsmaterialien)
 //!
 //! See their documentation [here](https://dip.bundestag.de/documents/informationsblatt_zur_dip_api.pdf)
-use std::str::FromStr;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 pub use model::Aktivitaet;
 use model::Plenarprotokoll;
@@ -20,7 +19,7 @@ mod model;
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")] // just for num_found -> numFound ...
 struct Response<T> {
-    num_found: i32,
+    // num_found: i32, // This field exists but isn't used 
     documents: Vec<T>,
     cursor: String,
 }
