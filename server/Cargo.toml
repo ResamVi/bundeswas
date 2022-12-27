@@ -6,6 +6,7 @@ description = """
 wasletztegesetz is a web application showing Bundestagsabstimmungen
 """
 edition = "2021"
+default-run = "parser"
 
 [[bin]]
 name = "print"

@@ -1,5 +1,6 @@
 // use std::fs;
 use nom::IResult;
+use nom::error::Error;
 use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::digit0;
 use nom::combinator::map;
@@ -23,14 +24,22 @@ fn main() {
     let x = x.text.unwrap();
     let x = clean(&x);
 
-    let (remain, _) = parse_title(&x).expect("could not parse title");
+    let (remain, title) = parse_title(&x).expect("could not parse title");
     // let (remain, _) = skip(&remain).expect("could not skip");
 
+    println!("{:?}", title);
+    println!("{:?}", &remain[..100]);
 
-    let (remain, res) = parse_inhalt(&remain).expect("could not parse inhalt");
+    let result = parse_inhalt(&remain);
+    match result {
+        Ok(_) => println!("all good!"),
+        Err(nom::Err::Error(e)) => println!("Error at {:?}", &e.input[..50]),
+        Err(_) => panic!("unexpected"),
+    }
 
+    // let (remain, res) = parse_inhalt(&remain).expect("could not parse inhalt");
     // println!("{:?}", &remain[..500]);
-    println!("{:?}", res);
+    // println!("{:?}", res);
 
     // let (remain, _) = parse_inhalt(remain).expect("could not parse inhalt");
 
@@ -63,14 +72,10 @@ fn parse_title(s: &str) -> IResult<&str, Title> {
     )(s)
 }
 
-
-fn skip(s: &str) -> IResult<&str, &str> {
-    tag("Erweiterung und Abwicklung der Tagesordnung")(s)
-}
-
 fn parse_inhalt(s: &str) -> IResult<&str, (&str, Vec<&str>, &str)> {
+    println!("{:?}", &s[..200]);
     tuple((
-        tag("Erweiterung und Abwicklung der Tagesordnung"),
+        take_until(". . ."),
         many1(tag(" .")),
         // tag(" . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."),
         tag(" 8357 A"),
