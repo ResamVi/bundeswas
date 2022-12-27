@@ -1,4 +1,4 @@
-{ "text": "Deutscher Bundestag
+Deutscher Bundestag
 Stenografischer Bericht
 69. Sitzung
 Berlin, Mittwoch, den 23. November 2022
@@ -139,5 +139,6 @@ Manuel Gava (SPD) . . . . . . . . . . . . . . . . . . . . . . . . . . 8119 C
 Nächste Sitzung . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8120 D
 Anlage
 Entschuldigte Abgeordnete . . . . . . . . . . . . . . . . . . . 8121 A
-"
-}
+Deutscher Bundestag – 20. Wahlperiode – 69. Sitzung. Berlin, Mittwoch, den 23. November 2022                             II 
+69. Sitzung
+Berlin, Mittwoch, den 23. November 2022
