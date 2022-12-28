@@ -6,7 +6,7 @@ description = """
 wasletztegesetz is a web application showing Bundestagsabstimmungen
 """
 edition = "2021"
-default-run = "parser"
+default-run = "download"
 
 [[bin]]
 name = "print"
@@ -53,3 +53,4 @@ tower = "0.4.13"
 # CORS
 tower-http = { version = "0.3.4", features = ["cors", "trace"]}
 nom = "7.1.1"
+chrono = "0.4.23"

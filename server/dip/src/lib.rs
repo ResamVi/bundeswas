@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 pub use model::Aktivitaet;
 use model::Plenarprotokoll;
-use model::PlenarprotokollText;
+pub use model::PlenarprotokollText;
 use model::Vorgang;
 
 mod model;
