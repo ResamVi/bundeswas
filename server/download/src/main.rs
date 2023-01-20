@@ -48,7 +48,7 @@ enum Format {
 fn main() {
     let args = Args::parse();
 
-    let count = match args.typ {
+    match args.typ {
         Typ::Plenarprotokoll => download_by_id(args.count.unwrap_or(1), &Id(args.input), &args.format),
         Typ::Sitzung => todo!(),
         Typ::Datum => todo!(),
@@ -85,41 +85,10 @@ impl Matcher for Id {
     }
 }
 
-/// Depending on the format download as .json or .txt
-trait Downloader {
-    fn download(&self, plenarprotokoll: dip::PlenarprotokollText);
-}
-
-impl Downloader for Format {
-    fn download(&self, plenarprotokoll: dip::PlenarprotokollText) {
-        // TODO: If we were to support more than those formats RIP. Need to extract them to
-        // separate functions.
-
-        // Prepare path where to download.
-        let path = match self {
-            Format::Json => format!("plenarprotokolle/{}.json", plenarprotokoll.datum),
-            Format::Txt => format!("plenarprotokolle/{}.txt", plenarprotokoll.datum),
-            _ => format!("plenarprotokolle/{}.txt", plenarprotokoll.datum),
-        };
-
-        let content = match self {
-            Format::Json => format!("{{\"text\": \"{}\"}}", plenarprotokoll.text.unwrap()), // Wrap in brackets that can be parsed by Label Studio.
-            Format::Txt => plenarprotokoll.text.unwrap(), // Raw text dump.
-        };
-
-        // Override the files if they already exist.
-        let result = fs::write(path, content);
-        if let Err(e) = result {
-            panic!("could not write: {}", e);
-        }
-
-        println!("Downloaded Plenarprotokoll '{}'", plenarprotokoll.id);
-    }
-}
 
 
 // Fills a folder "plenarprotokolle" with .json files of Plenarprotokolle ready to be labelled in Label Studio.
-fn download_by_id(desired_count: usize, rule: &dyn Matcher, format: &dyn Downloader) -> usize {
+fn download_by_id(desired_count: usize, rule: &dyn Matcher, format: &dyn Downloader) {
     let bundestag = dip::new();
 
     // Create folder if it does not exist.
@@ -164,45 +133,43 @@ fn download_by_id(desired_count: usize, rule: &dyn Matcher, format: &dyn Downloa
         format.download(plenarprotokoll);
         download_count += 1;
     }
-
-    download_count
 }
 
 // Fills a folder with .txt files of Inhaltsverzeichnise (the first pages of a Plenarprotokoll).
-fn download_inhaltsverzeichnis(count: usize) {
-    let bundestag = dip::new();
+// fn download_inhaltsverzeichnis(count: usize) {
+//     let bundestag = dip::new();
 
-    let result = fs::create_dir("inhaltsverzeichnisse");
-    if let Err(e) = result {
-        match e.kind() {
-            std::io::ErrorKind::AlreadyExists => (),
-            _ => panic!("could not create file: {}", e),
-        }
-    }
+//     let result = fs::create_dir("inhaltsverzeichnisse");
+//     if let Err(e) = result {
+//         match e.kind() {
+//             std::io::ErrorKind::AlreadyExists => (),
+//             _ => panic!("could not create file: {}", e),
+//         }
+//     }
 
 
-    for val in bundestag.plenarprotokoll_texte().take(count) {
-        if val.text.is_none() {
-            println!("Skipped because no text was found.");
-            continue;
-        }
+//     for val in bundestag.plenarprotokoll_texte().take(count) {
+//         if val.text.is_none() {
+//             println!("Skipped because no text was found.");
+//             continue;
+//         }
 
-        let name = format!("inhaltsverzeichnisse/{}.txt", val.datum);
-        let text = val.text.unwrap();
+//         let name = format!("inhaltsverzeichnisse/{}.txt", val.datum);
+//         let text = val.text.unwrap();
 
-        let until = text.find("Beginn:").unwrap();
+//         let until = text.find("Beginn:").unwrap();
 
-        // The Inhaltsverzeichnis roughly reaches until this string.
-        let content = &text[..until];
+//         // The Inhaltsverzeichnis roughly reaches until this string.
+//         let content = &text[..until];
 
-        // Overrides the files if they already exist
-        let result = fs::write(name, content);
-        if let Err(e) = result {
-            panic!("could not write: {}", e);
-        }
-    }
+//         // Overrides the files if they already exist
+//         let result = fs::write(name, content);
+//         if let Err(e) = result {
+//             panic!("could not write: {}", e);
+//         }
+//     }
 
-}
+// }
 
 // A Plenarprotokoll page is seperated by a string that reads like this:
 //      Deutscher Bundestag – 20. Wahlperiode – 68. Sitzung. Berlin, Dienstag, den 22. November 2022
