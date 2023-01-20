@@ -1,21 +1,58 @@
-use dip;
+use dip::{self, PlenarprotokollText};
 
 use std::fs::{File, self};
-use std::io::Write;
 use std::env;
 use std::io::ErrorKind;
+
 use chrono::{self, NaiveDate, Datelike, Weekday};
+use clap::{ Parser, ArgGroup };
+use spinners::{Spinner, Spinners};
 
+#[derive(Parser)]
+struct Args {
+    /// What Plenarprotokoll to find.
+    input: String,
+
+    /// Downloads the selected Plenarprotokoll and all n after it.
+    #[arg(short, long)]
+    count: Option<usize>,
+
+    ///
+    #[clap(value_enum)]
+    #[arg(short, long)]
+    typ: Typ,
+
+    /// Output File format
+    #[clap(value_enum)]
+    #[arg(short, long)]
+    format: Format,
+}
+
+/// 
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum Typ {
+    Plenarprotokoll,
+    Sitzung,
+    Datum,
+}
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum Format {
+    Json,
+    Txt,
+}
+
+
+// download -f json -t plenarprotokoll 5449
+// download -f txt -t sitzung 8
 fn main() {
-    // download_plenarprotokolle(10);
-    let bundestag = dip::new();
+    let args = Args::parse();
 
-    let protokoll = bundestag.plenarprotokoll_text().skip(4).next().unwrap();
-    let split = get_splitter(&protokoll);
-
-    let text = protokoll.text.unwrap();
-
-    let pages: Vec<&str> = text.split(&split).collect();
+    let count = match args.typ {
+        Typ::Plenarprotokoll => download_by_id(args.count.unwrap_or(1), &Id(args.input), &args.format),
+        Typ::Sitzung => todo!(),
+        Typ::Datum => todo!(),
+    };
 }
 
 // Deutscher Bundestag – 20. Wahlperiode – 68. Sitzung. Berlin
@@ -30,42 +67,105 @@ fn download_seiten(count: usize) {
         }
     }
 
-    for val in bundestag.plenarprotokoll_text().take(count) {
+    for val in bundestag.plenarprotokoll_texte().take(count) {
         println!("{}", val.wahlperiode);
     }
 }
 
-// Fills a folder "plenarproktolle" with .json files of Plenarprotokolle ready to be labelled in
-// Label Studio.
-fn download_plenarprotokolle(count: usize) {
+trait Matcher {
+    fn matches(&self, plenarprotokoll: &dip::PlenarprotokollText) -> bool;
+}
+
+/// An input parameter that should be interpreted as an Id of a Plenarprotokoll.
+struct Id(String);
+
+impl Matcher for Id {
+    fn matches(&self, plenarprotokoll: &dip::PlenarprotokollText) -> bool {
+        plenarprotokoll.id == self.0
+    }
+}
+
+/// Depending on the format download as .json or .txt
+trait Downloader {
+    fn download(&self, plenarprotokoll: dip::PlenarprotokollText);
+}
+
+impl Downloader for Format {
+    fn download(&self, plenarprotokoll: dip::PlenarprotokollText) {
+        // TODO: If we were to support more than those formats RIP. Need to extract them to
+        // separate functions.
+
+        // Prepare path where to download.
+        let path = match self {
+            Format::Json => format!("plenarprotokolle/{}.json", plenarprotokoll.datum),
+            Format::Txt => format!("plenarprotokolle/{}.txt", plenarprotokoll.datum),
+            _ => format!("plenarprotokolle/{}.txt", plenarprotokoll.datum),
+        };
+
+        let content = match self {
+            Format::Json => format!("{{\"text\": \"{}\"}}", plenarprotokoll.text.unwrap()), // Wrap in brackets that can be parsed by Label Studio.
+            Format::Txt => plenarprotokoll.text.unwrap(), // Raw text dump.
+        };
+
+        // Override the files if they already exist.
+        let result = fs::write(path, content);
+        if let Err(e) = result {
+            panic!("could not write: {}", e);
+        }
+
+        println!("Downloaded Plenarprotokoll '{}'", plenarprotokoll.id);
+    }
+}
+
+
+// Fills a folder "plenarprotokolle" with .json files of Plenarprotokolle ready to be labelled in Label Studio.
+fn download_by_id(desired_count: usize, rule: &dyn Matcher, format: &dyn Downloader) -> usize {
     let bundestag = dip::new();
 
+    // Create folder if it does not exist.
     let result = fs::create_dir("plenarprotokolle");
     if let Err(e) = result {
         match e.kind() {
             std::io::ErrorKind::AlreadyExists => (),
-            _ => panic!("could not create file: {}", e),
+            _ => panic!("could not create directory: {}", e),
         }
     }
 
+    // Start a spinner when looking.
+    let mut sp = Spinner::new(Spinners::Dots10, "Searching through all Plenarprotokolle.".into());
 
-    for val in bundestag.plenarprotokoll_text().take(count) {
-        if val.text.is_none() {
-            println!("Skipped because no text was found.");
+    // Start looking for a match.
+    let mut skipped = 0;
+    for plenarprotokoll in bundestag.plenarprotokoll_texte() {
+        // Skip until we find a first occurence.
+        if !rule.matches(&plenarprotokoll) {
+            skipped += 1;
+            continue
+        }
+        break;
+    }
+    sp.stop_and_persist("✔", "Found a match.".into());
+
+
+    // Download match + some more if specified.
+    let mut download_count = 0;
+    for plenarprotokoll in bundestag.plenarprotokoll_texte().skip(skipped).take(desired_count) {
+        // Stop downloading when the requested amount of Plenarprotokolle is reached.
+        if download_count == desired_count {
+            break
+        }
+
+        // Sometimes a Plenarprotokoll is listed but no text has been published yet.
+        if plenarprotokoll.text.is_none() {
+            println!("\nSkipped Plenarprotokoll '{}' because no text has been published yet.", plenarprotokoll.id);
             continue;
         }
 
-        let name = format!("plenarprotokolle/{}.json", val.datum);
-        let text = val.text.unwrap();
-
-        let text = format!("{{\"text\": \"{}\"}}", text);
-
-        // Overrides the files if they already exist
-        let result = fs::write(name, text);
-        if let Err(e) = result {
-            panic!("could not write: {}", e);
-        }
+        format.download(plenarprotokoll);
+        download_count += 1;
     }
+
+    download_count
 }
 
 // Fills a folder with .txt files of Inhaltsverzeichnise (the first pages of a Plenarprotokoll).
@@ -81,7 +181,7 @@ fn download_inhaltsverzeichnis(count: usize) {
     }
 
 
-    for val in bundestag.plenarprotokoll_text().take(count) {
+    for val in bundestag.plenarprotokoll_texte().take(count) {
         if val.text.is_none() {
             println!("Skipped because no text was found.");
             continue;

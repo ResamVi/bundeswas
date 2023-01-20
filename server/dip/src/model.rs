@@ -64,7 +64,7 @@ pub struct Plenarprotokoll {
     pub vorgangsbezug: Option<Vec<Vorgangsbezug>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PlenarprotokollText {
     pub id: String,
     pub datum: String, // TODO: type ok?

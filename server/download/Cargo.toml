@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.23"
+clap = { version = "4.1.1", features = ["derive"] }
 dip = { version = "0.1.0", path = "../dip" }
+spinners = "4.1.0"

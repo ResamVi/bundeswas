@@ -46,9 +46,21 @@ impl DIP {
         PaginatedResource::new("https://search.dip.bundestag.de/api/v1/plenarprotokoll?f.zuordnung=BT&f.datum.start=2021-09-26")
     }
 
-    pub fn plenarprotokoll_text(&self) -> impl Iterator<Item = PlenarprotokollText> {
+    pub fn plenarprotokoll_texte(&self) -> impl Iterator<Item = PlenarprotokollText> {
         PaginatedResource::new("https://search.dip.bundestag.de/api/v1/plenarprotokoll-text?f.zuordnung=BT&f.datum.start=2021-09-26")
     }
+
+    // pub fn plenarprotokoll_text(&self) -> PlenarprotokollText {
+    //     let body: String = ureq::get("https://search.dip.bundestag.de/api/v1/plenarprotokoll-text/5449?f.datum.start=2021-10-26")
+    //         .set("Authorization", "ApiKey GmEPb1B.bfqJLIhcGAsH9fTJevTglhFpCoZyAAAdhp")
+    //         .call()
+    //         .expect("could not GET")
+    //         .into_string()
+    //         .expect("could not convert to to string");
+
+    //     let mut response: PlenarprotokollText = serde_json::from_str(&body).unwrap();
+    //     response
+    // }
 
     pub fn vorgaenge(&self, plenarprotokoll_id: String) -> impl Iterator<Item = Vorgang> {
         PaginatedResource::new(format!("https://search.dip.bundestag.de/api/v1/vorgang?f.zuordnung=BT&f.datum.start=2021-09-26&f.plenarprotokoll={plenarprotokoll_id}").as_str())
@@ -110,7 +122,6 @@ impl<T: DeserializeOwned> core::iter::Iterator for PaginatedResource<T> {
         // println!("{}", url);
 
         // TODO: handle error
-        // TODO: self.response still needed?
         let body: String = ureq::get(&url)
             // .set("Authorization", "ApiKey GmEPb1B.bfqJLIhcGAsH9fTJevTglhFpCoZyAAAdhp")
             .call()
