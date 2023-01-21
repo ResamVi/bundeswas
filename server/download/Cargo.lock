@@ -191,6 +191,8 @@ dependencies = [
  "chrono",
  "clap",
  "dip",
+ "serde",
+ "serde_json",
  "spinners",
 ]
 
