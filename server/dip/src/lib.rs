@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 
 pub use model::Aktivitaet;
-use model::Plenarprotokoll;
+pub use model::Plenarprotokoll;
 pub use model::PlenarprotokollText;
 use model::Vorgang;
 
