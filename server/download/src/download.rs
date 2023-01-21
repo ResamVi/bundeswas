@@ -1,32 +1,53 @@
-/// A Downloader implements the strategy how to download a plenarprotokoll in a specific format.  
-trait Downloader {
+use std::fs;
+
+#[derive(clap::ValueEnum, Clone, Debug)]
+pub enum Format {
+    Json,
+    Txt,
+    Stdout,
+}
+
+/// Implement the Downloader trait to specifiy the strategy how to download a plenarprotokoll in a specific format.  
+pub trait Downloader {
     fn download(&self, plenarprotokoll: dip::PlenarprotokollText);
 }
 
 /// Depending on the format download as .json or .txt
 impl Downloader for Format {
     fn download(&self, plenarprotokoll: dip::PlenarprotokollText) {
-        // TODO: If we were to support more than those formats RIP. Need to extract them to
-        // separate functions.
+        // TODO: Allow specifying path.
 
         // Prepare path where to download.
         let path = match self {
-            Format::Json => format!("plenarprotokolle/{}.json", plenarprotokoll.datum),
-            Format::Txt => format!("plenarprotokolle/{}.txt", plenarprotokoll.datum),
-            _ => format!("plenarprotokolle/{}.txt", plenarprotokoll.datum),
+            Format::Json => download_json(&plenarprotokoll),
+            Format::Txt => download_txt(&plenarprotokoll),
+            Format::Stdout => download_stdout(&plenarprotokoll),
+            _ => panic!("format not found"),
         };
 
-        let content = match self {
-            Format::Json => format!("{{\"text\": \"{}\"}}", plenarprotokoll.text.unwrap()), // Wrap in brackets that can be parsed by Label Studio.
-            Format::Txt => plenarprotokoll.text.unwrap(), // Raw text dump.
-        };
-
-        // Override the files if they already exist.
-        let result = fs::write(path, content);
-        if let Err(e) = result {
-            panic!("could not write: {}", e);
-        }
 
         println!("Downloaded Plenarprotokoll '{}'", plenarprotokoll.id);
     }
+}
+
+fn download_json(plenarprotokoll: &dip::PlenarprotokollText) {
+    let path = format!("plenarprotokolle/{}.json", plenarprotokoll.datum);
+    let content = format!("{{\"text\": \"{}\"}}", plenarprotokoll.text.as_ref().unwrap()); // Wrap in brackets that can be parsed by Label Studio.
+    let result = fs::write(path, content);
+    if let Err(e) = result {
+        panic!("could not write: {}", e);
+    }
+}
+
+fn download_txt(plenarprotokoll: &dip::PlenarprotokollText) {
+    let path = format!("plenarprotokolle/{}.txt", plenarprotokoll.datum);
+    let content = plenarprotokoll.text.as_ref().unwrap(); // Raw text dump.
+    let result = fs::write(path, content);
+    if let Err(e) = result {
+        panic!("could not write: {}", e);
+    }
+}
+
+fn download_stdout(plenarprotokoll: &dip::PlenarprotokollText) {
+    println!("{}", plenarprotokoll.text.as_ref().unwrap());
 }

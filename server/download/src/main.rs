@@ -8,6 +8,8 @@ use chrono::{self, NaiveDate, Datelike, Weekday};
 use clap::{ Parser, ArgGroup };
 use spinners::{Spinner, Spinners};
 
+mod download;
+
 #[derive(Parser)]
 struct Args {
     /// What Plenarprotokoll to find.
@@ -25,7 +27,7 @@ struct Args {
     /// Output File format
     #[clap(value_enum)]
     #[arg(short, long)]
-    format: Format,
+    format: download::Format,
 }
 
 /// 
@@ -34,12 +36,6 @@ enum Typ {
     Plenarprotokoll,
     Sitzung,
     Datum,
-}
-
-#[derive(clap::ValueEnum, Clone, Debug)]
-enum Format {
-    Json,
-    Txt,
 }
 
 
@@ -88,7 +84,7 @@ impl Matcher for Id {
 
 
 // Fills a folder "plenarprotokolle" with .json files of Plenarprotokolle ready to be labelled in Label Studio.
-fn download_by_id(desired_count: usize, rule: &dyn Matcher, format: &dyn Downloader) {
+fn download_by_id(desired_count: usize, rule: &dyn Matcher, format: &dyn download::Downloader) {
     let bundestag = dip::new();
 
     // Create folder if it does not exist.
