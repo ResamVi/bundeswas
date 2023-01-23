@@ -70,18 +70,6 @@ enum Commands {
 
 
 fn main() {
-    // let bundestag = dip::new();
-    // let x = bundestag.plenarprotokoll_texte().skip(2).take(1).next().unwrap();
-    // println!("{:?}", x.id);
-    // println!("{:?}", x.text);
-
-    // let splitter = get_splitter(&x);
-    // println!("{:?}", s)
-
-    // let text = x.text.unwrap();
-    // let v: Vec<&str> = text.split(&splitter).collect();
-    // println!("{:?}", v.get(25).unwrap());
-
     let cli = Cli::parse();
 
     match &cli.command {
