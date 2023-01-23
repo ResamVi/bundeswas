@@ -11,7 +11,7 @@ use spinners::{ Spinner, Spinners };
 use prettytable::{Table, Row, Cell};
 
 mod matcher;
-mod downloader;
+mod formats;
 
 /// A Command-Line Interface to the DIP (Dokumentations- und Informationssystem für
 /// Parlamentsmaterialien) to download Plenarprotokolle.
@@ -43,7 +43,7 @@ enum Commands {
     /// Download one or multiple Plenarprotokoll given an identifier.
     Plenarprotokoll {
         /// What Plenarprotokoll to find.
-        input: String,
+        input: Option<String>,
 
         /// Downloads the selected Plenarprotokoll and all n after it.
         #[arg(short, long)]
@@ -51,13 +51,13 @@ enum Commands {
 
         /// Via what parameter the Plenarprotokoll should be identified.
         #[clap(value_enum)]
-        #[arg(short, long)]
+        #[arg(short, long, default_value_t=Typ::Plenarprotokoll)]
         typ: Typ,
 
         /// Output File format
         #[clap(value_enum)]
-        #[arg(short, long)]
-        format: downloader::Format,
+        #[arg(short, long, default_value_t=formats::Format::Stdout)]
+        format: formats::Format,
     },
 
     /// List what Plenarprotokolle are currently available.
@@ -86,6 +86,13 @@ fn main() {
 
     match &cli.command {
         Some(Commands::Plenarprotokoll{ input, count, typ, format }) => {
+            // Use latest plenarprotokoll if no ID was specified
+            let default = &dip::new().plenarprotokolle().take(1).next().unwrap().id;
+            let input = match input.as_ref() {
+                Some(input) => input,
+                None => default,
+            };
+
             match typ {
                 Typ::Plenarprotokoll => download_by_id(count.unwrap_or(1), &matcher::Id(input.to_string()), format),
                 Typ::Sitzung => todo!(),
@@ -112,7 +119,7 @@ fn main() {
 }
 
 // Fills a folder "plenarprotokolle" with .json files of Plenarprotokolle ready to be labelled in Label Studio.
-fn download_by_id(desired_count: usize, rule: &dyn matcher::Matcher, format: &dyn downloader::Downloader) {
+fn download_by_id(desired_count: usize, rule: &dyn matcher::Matcher, format: &dyn formats::Downloader) {
     let bundestag = dip::new();
 
     // Create folder if it does not exist.
