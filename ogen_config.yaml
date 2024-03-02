@@ -1,0 +1,6 @@
+generator:
+  features:
+    disable_all: true
+    enable:
+      - 'paths/client'
+

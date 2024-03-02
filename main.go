@@ -17,31 +17,41 @@ var (
 	apikey = "rgsaY4U.oZRQKUHdJhF9qguHMkwCGIoLaqEcaHjYLF"
 )
 
-// oapi-codegen -package dip -generate types,client -include-tags Plenarprotokolle openapi.yaml > dip/dip.gen.go
-//
 // Example: https://search.dip.bundestag.de/api/v1/plenarprotokoll/908?apikey=rgsaY4U.oZRQKUHdJhF9qguHMkwCGIoLaqEcaHjYLF
+//
+//go:generate go run github.com/ogen-go/ogen/cmd/ogen@latest --target dip --package dip --clean --config ogen_config.yaml openapi.yaml
 func main() {
 	if value, ok := os.LookupEnv("API_KEY"); ok {
 		apikey = value
 	}
 
-	client, err := dip.NewClientWithResponses(url, dip.Authenticate(apikey))
+	auth := Auth{}
+	client, err := dip.NewClient(url, auth)
 	if err != nil {
 		panic(err)
 	}
 
-	params := &dip.GetPlenarprotokollParams{
-		Format: ref(dip.Json),
+	params := dip.GetPlenarprotokollParams{
+		ID:     plenarprotokollID,
+		Format: dip.NewOptGetPlenarprotokollFormat(dip.GetPlenarprotokollFormatJSON),
 	}
 
-	plenarprotokoll, err := client.GetPlenarprotokollWithResponse(context.Background(), plenarprotokollID, params)
+	plenarprotokoll, err := client.GetPlenarprotokoll(context.Background(), params)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(plenarprotokoll.JSON200)
+	p := plenarprotokoll.(*dip.Plenarprotokoll)
+
+	fmt.Println(p.Herausgeber)
 }
 
-func ref[T any](obj T) *T {
-	return &obj
+type Auth struct{}
+
+func (a Auth) ApiKeyHeader(ctx context.Context, operationName string) (dip.ApiKeyHeader, error) {
+	return dip.ApiKeyHeader{APIKey: apikey}, nil
+}
+
+func (a Auth) ApiKeyQuery(ctx context.Context, operationName string) (dip.ApiKeyQuery, error) {
+	return dip.ApiKeyQuery{APIKey: apikey}, nil
 }
