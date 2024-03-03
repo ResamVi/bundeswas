@@ -11,3 +11,15 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
 - Textbox mit Autocomplete
 - Beim Finden eines Zitats navigiere zum entsprechenden Teil des Plenarprotokolls
 
+# TODOs
+- [  ] Frontend
+    - [  ] inovex-elements einbinden
+    - [  ] ino-autocomplete
+- [  ] Handgeschriebener Client
+    - [  ] Memory Usage benchmarken
+- [  ] Fuzzy Finder Implementierungen
+    - [  ] Interface definieren
+        - [  ] Naive Text-suche durch Datei
+        - [  ] Mit Postgres
+        - [  ] Mit Solr
+        - [  ] Mit ElasticSearch
