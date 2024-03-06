@@ -2,7 +2,7 @@ package dip
 
 import "testing"
 
-const length = 50
+const length = 1000
 
 func BenchmarkGetTotalProtokoll(b *testing.B) {
 	client := NewClient()
