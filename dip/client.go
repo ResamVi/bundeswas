@@ -56,7 +56,7 @@ func (c *Client) WithKey(url string) *Client {
 	return c
 }
 
-func (c *Client) DownloadProtokolle(count int) chan PlenarprotokollText {
+func (c *Client) DownloadProtokolle() chan PlenarprotokollText {
 	downloads := make(chan PlenarprotokollText, 100)
 	go func() {
 		cursor := ""
@@ -66,16 +66,17 @@ func (c *Client) DownloadProtokolle(count int) chan PlenarprotokollText {
 			if err != nil {
 				panic(err) // TODO:
 			}
-			cursor = resp.Cursor
-			current += len(resp.Documents)
 			for _, document := range resp.Documents {
 				downloads <- document
 			}
 
-			if len(resp.Documents) == 0 || current > count {
+			current += len(resp.Documents)
+			if len(resp.Documents) == 0 {
 				close(downloads)
 				break
 			}
+
+			cursor = resp.Cursor
 		}
 	}()
 

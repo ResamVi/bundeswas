@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/resamvi/bundeswas/dip"
 )
@@ -9,10 +10,10 @@ import (
 func main() {
 	client := dip.NewClient()
 
-	documents := client.DownloadProtokolle(100)
-	for i := range documents {
-		fmt.Println(i.Id)
+	start := time.Now()
+	documents := client.DownloadProtokolle()
+	for range documents {
 	} // Wait for all documents to arrive.
 
-	fmt.Println("done")
+	fmt.Println(time.Since(start))
 }

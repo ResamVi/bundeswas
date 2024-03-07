@@ -16,11 +16,11 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
     - [x] Use template
     - [  ] Retrieve results from backend
 - [  ] Handgeschriebener Client
-    - [  ] Download binary mit bubble tea
-        - [  ] Spinner von https://github.com/charmbracelet/bubbletea/blob/master/examples/realtime/main.go
-        - [  ] Statusleiste von https://github.com/charmbracelet/bubbletea/tree/master/examples/progress-static
+    - [  ] "download" binary mit bubble tea
+        - [x] Spinner von https://github.com/charmbracelet/bubbletea/blob/master/examples/realtime/main.go
+        - [x] Statusleiste von https://github.com/charmbracelet/bubbletea/tree/master/examples/progress-static
         - [  ] Zwischenmeldungen von https://github.com/charmbracelet/bubbletea/tree/master/examples/tui-daemon-combo
-        - [  ] Endmeldung von https://github.com/charmbracelet/bubbletea/tree/master/examples/package-manager
+        - [x] Endmeldung von https://github.com/charmbracelet/bubbletea/tree/master/examples/package-manager
     - [  ] Memory Usage benchmarken
 - [  ] Fuzzy Finder Implementierungen
     - [  ] Interface definieren

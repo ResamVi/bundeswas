@@ -14,36 +14,25 @@ import (
 )
 
 type model struct {
-	percent float64
-
 	progress progress.Model
 	spinner  spinner.Model
 
-	downloaded   chan []dip.PlenarprotokollText
+	start        time.Time
+	downloaded   chan dip.PlenarprotokollText
 	currentCount int
 	totalCount   int
+	percent      float64
+	done         bool
 }
 
 type tickMsg time.Time
 
 // Bubble Tea will run this asynchronously.
-func downloadPlenarprotokolle(downloads chan []dip.PlenarprotokollText) tea.Cmd {
+func downloadPlenarprotokolle(downloads chan dip.PlenarprotokollText) tea.Cmd {
 	return func() tea.Msg {
-		cursor := ""
-		client := dip.NewClient()
-
-		for {
-			resp, err := client.GetProtokolle(cursor)
-			if err != nil {
-				panic(err) // TODO
-			}
-			cursor = resp.Cursor
-
-			if len(resp.Documents) == 0 {
-				break
-			}
-
-			downloads <- resp.Documents
+		stream := dip.NewClient().DownloadProtokolle()
+		for document := range stream {
+			downloads <- document
 		}
 
 		return tea.Quit // TODO: Success message
@@ -51,12 +40,13 @@ func downloadPlenarprotokolle(downloads chan []dip.PlenarprotokollText) tea.Cmd 
 }
 
 // Indicate how many new Plenarprotokolle were downloaded.
-type downloadMsg struct{ count int }
+type downloadMsg struct{}
 
 // A command that waits for downloaded Plenarprotokolle and sends a message to report how many.
-func waitForMore(downloads chan []dip.PlenarprotokollText) tea.Cmd {
+func waitForMore(downloads chan dip.PlenarprotokollText) tea.Cmd {
 	return func() tea.Msg {
-		return downloadMsg{count: len(<-downloads)}
+		<-downloads
+		return downloadMsg{}
 	}
 }
 
@@ -89,7 +79,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Listen for newly downloaded Plenarprotokolle and count up progress.
 	case downloadMsg:
-		m.currentCount += msg.count
+		m.currentCount++
+		if m.currentCount == m.totalCount {
+			m.done = true
+			return m, tea.Quit
+		}
 		return m, waitForMore(m.downloaded) // wait for next event
 
 	// Listen for when window is resized.
@@ -111,10 +105,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
+var (
+	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
+	doneStyle = lipgloss.NewStyle().Margin(1, 2).Render
+)
 
 func (m model) View() string {
 	const padding = 2 // space between left border and progress bar
+
+	if m.done {
+		return doneStyle(fmt.Sprintf("Done! Downloaded %d Plenarprotokolle in %s.\n", m.totalCount, time.Since(m.start)))
+	}
 
 	s := fmt.Sprintf("\n %s (%d / %d) Plenarprotokolle downloaded: \n", m.spinner.View(), m.currentCount, m.totalCount)
 	percentage := float64(m.currentCount) / float64(m.totalCount)
@@ -134,8 +135,9 @@ func main() {
 	}
 
 	p := tea.NewProgram(model{
+		start:      time.Now(),
 		totalCount: count,
-		downloaded: make(chan []dip.PlenarprotokollText),
+		downloaded: make(chan dip.PlenarprotokollText),
 		spinner:    spinner.New(),
 		progress:   progress.New(),
 	})
