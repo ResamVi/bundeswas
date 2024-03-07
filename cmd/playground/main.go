@@ -12,8 +12,9 @@ func main() {
 
 	start := time.Now()
 	documents := client.DownloadProtokolle()
-	for range documents {
-	} // Wait for all documents to arrive.
+	for document := range documents {
+		fmt.Println(document.Id)
+	}
 
 	fmt.Println(time.Since(start))
 }

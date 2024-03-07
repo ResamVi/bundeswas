@@ -23,11 +23,23 @@ type model struct {
 	totalCount   int
 	percent      float64
 	done         bool
+	results      []string
 }
 
-type tickMsg time.Time
+type prepareMsg struct{ count int }
 
-// Bubble Tea will run this asynchronously.
+func prepareDownload() tea.Cmd {
+	return func() tea.Msg {
+		count, err := dip.NewClient().GetCount()
+		if err != nil {
+			panic(err) // TODO: Return
+		}
+
+		return prepareMsg{count: count}
+	}
+}
+
+// A command that starts downloadign Plenarprotokolle and forwards them to a channel.
 func downloadPlenarprotokolle(downloads chan dip.PlenarprotokollText) tea.Cmd {
 	return func() tea.Msg {
 		stream := dip.NewClient().DownloadProtokolle()
@@ -35,36 +47,32 @@ func downloadPlenarprotokolle(downloads chan dip.PlenarprotokollText) tea.Cmd {
 			downloads <- document
 		}
 
-		return tea.Quit // TODO: Success message
+		return tea.Quit
 	}
 }
 
-// Indicate how many new Plenarprotokolle were downloaded.
-type downloadMsg struct{}
+// Indicate that new Plenarprotokolle were downloaded.
+type downloadMsg struct{ id string }
 
-// A command that waits for downloaded Plenarprotokolle and sends a message to report how many.
+// A command that listens for downloaded Plenarprotokolle and sends a message to render an update.
 func waitForMore(downloads chan dip.PlenarprotokollText) tea.Cmd {
 	return func() tea.Msg {
-		<-downloads
-		return downloadMsg{}
+		d := <-downloads
+		return downloadMsg{id: d.Id}
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	// return tea.Sequence(
-	// 	tea.Batch(
-	// 		tea.Println("A"),
-	// 		tea.Println("B"),
-	// 		tea.Println("C"),
-	// 	),
-	// 	tea.Println("Z"),
-	// 	tea.Quit,
-	// )
+	return tea.Sequence(
+		// Prepare
+		prepareDownload(),
 
-	return tea.Batch(
-		m.spinner.Tick,
-		downloadPlenarprotokolle(m.downloaded), // generate activity
-		waitForMore(m.downloaded),              // wait for activity
+		// Download
+		tea.Batch(
+			m.spinner.Tick,
+			downloadPlenarprotokolle(m.downloaded),
+			waitForMore(m.downloaded),
+		),
 	)
 }
 
@@ -77,9 +85,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		return m, tea.Quit
 
+	// Listen for answer to how many documents exist ("preparation").
+	case prepareMsg:
+		m.totalCount = msg.count
+		return m, waitForMore(m.downloaded)
+
 	// Listen for newly downloaded Plenarprotokolle and count up progress.
 	case downloadMsg:
 		m.currentCount++
+		m.results = append(m.results[1:], msg.id)
+
 		if m.currentCount == m.totalCount {
 			m.done = true
 			return m, tea.Quit
@@ -114,7 +129,7 @@ func (m model) View() string {
 	const padding = 2 // space between left border and progress bar
 
 	if m.done {
-		return doneStyle(fmt.Sprintf("Done! Downloaded %d Plenarprotokolle in %s.\n", m.totalCount, time.Since(m.start)))
+		return doneStyle(fmt.Sprintf("Done! Downloaded %d Plenarprotokolle in %s.\n", m.currentCount, time.Since(m.start)))
 	}
 
 	s := fmt.Sprintf("\n %s (%d / %d) Plenarprotokolle downloaded: \n", m.spinner.View(), m.currentCount, m.totalCount)
@@ -122,29 +137,34 @@ func (m model) View() string {
 
 	pad := strings.Repeat(" ", padding)
 	progress := "\n" +
-		pad + m.progress.ViewAs(percentage) + "\n\n" +
-		pad + helpStyle("Press any key to quit")
+		pad + m.progress.ViewAs(percentage) + "\n\n"
+
+	for _, id := range m.results {
+		if id == "" {
+			progress += pad + "........................\n"
+		} else {
+			progress += pad + fmt.Sprintf("Protokoll %s downloaded\n", id)
+		}
+	}
+
+	progress += "\n" + pad + helpStyle("Press any key to quit")
 
 	return s + progress
 }
 
 func main() {
-	count, err := dip.NewClient().GetProtokollCount()
-	if err != nil {
-		panic(err) // TODO
-	}
-
 	p := tea.NewProgram(model{
+		spinner:  spinner.New(),
+		progress: progress.New(),
+
 		start:      time.Now(),
-		totalCount: count,
+		totalCount: 1, // Avoid division by zero
+		results:    make([]string, 3),
 		downloaded: make(chan dip.PlenarprotokollText),
-		spinner:    spinner.New(),
-		progress:   progress.New(),
 	})
 
 	if _, err := p.Run(); err != nil {
 		fmt.Println("could not start program:", err)
 		os.Exit(1)
 	}
-
 }

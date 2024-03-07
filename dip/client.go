@@ -1,6 +1,7 @@
 package dip
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -44,23 +45,17 @@ func NewClient() *Client {
 	return &client
 }
 
-// WithURL overrides the default URL.
-func (c *Client) WithURL(url string) *Client {
-	c.URL = url
-	return c
-}
-
 // WithKey overrides the default API key.
-func (c *Client) WithKey(url string) *Client {
-	c.URL = url
+func (c *Client) WithKey(key string) *Client {
+	c.key = key
 	return c
 }
 
 func (c *Client) DownloadProtokolle() chan PlenarprotokollText {
 	downloads := make(chan PlenarprotokollText, 100)
+
 	go func() {
 		cursor := ""
-		current := 0
 		for {
 			resp, err := c.GetProtokolle(cursor)
 			if err != nil {
@@ -70,7 +65,6 @@ func (c *Client) DownloadProtokolle() chan PlenarprotokollText {
 				downloads <- document
 			}
 
-			current += len(resp.Documents)
 			if len(resp.Documents) == 0 {
 				close(downloads)
 				break
@@ -83,49 +77,19 @@ func (c *Client) DownloadProtokolle() chan PlenarprotokollText {
 	return downloads
 }
 
-// GetProtokollCount returns the total amount of Plenarprotokolle available.
-func (c *Client) GetProtokollCount() (int, error) {
-	requestURL, err := url.Parse(c.URL + "/plenarprotokoll-text")
+// getCount returns the total amount of Plenarprotokolle available.
+func (c *Client) GetCount() (int, error) {
+	req, err := http.NewRequest("GET", c.URL+"/plenarprotokoll-text", nil)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("could not create request to get count: %w", err)
 	}
 
-	req, err := http.NewRequest("GET", requestURL.String(), nil)
+	resp, err := c.doRequest(req)
 	if err != nil {
-		return 0, err
-	}
-	req.Header.Add("Authorization", "ApiKey "+c.key)
-
-	rsp, err := c.Client.Do(req)
-	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("could not do request to get count: %w", err)
 	}
 
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	if err != nil {
-		return 0, err
-	}
-	defer rsp.Body.Close()
-
-	switch {
-	case rsp.StatusCode == 200:
-		var dest Response
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return 0, err
-		}
-		return dest.NumFound, nil
-
-	case rsp.StatusCode == 400 || rsp.StatusCode == 401 || rsp.StatusCode == 404:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return 0, err
-		}
-		return 0, fmt.Errorf("error status returned: %w", dest)
-
-	default:
-		return 0, errors.New("unknown status code: " + rsp.Status)
-	}
-
+	return resp.NumFound, nil
 }
 
 // GetProtokolle gets a list of plenarprotokolle with their full text.
@@ -172,6 +136,47 @@ func (c *Client) GetProtokolle(cursor ...string) (*Response, error) {
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
+		}
+		return nil, fmt.Errorf("error status returned: %w", dest)
+
+	default:
+		return nil, errors.New("unknown status code: " + rsp.Status)
+	}
+}
+
+// doRequest sends an HTTP request.
+//
+// It contains all implementation details for communicating with the API.
+func (c *Client) doRequest(req *http.Request) (*Response, error) {
+	req.Header.Add("Authorization", "ApiKey "+c.key)
+
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("could not do request: %w", err)
+	}
+
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("could not read response body: %w", err)
+	}
+	defer rsp.Body.Close()
+
+	switch {
+	case rsp.StatusCode == 200:
+		var dest Response
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, fmt.Errorf("could not unmarshal response: %w\n%s", err, string(bodyBytes))
+		}
+		return &dest, nil
+
+	case rsp.StatusCode == 400 || rsp.StatusCode == 401 || rsp.StatusCode == 404:
+		if bytes.Contains(bodyBytes, []byte("Rate-Limit exceeded.")) {
+			return nil, errors.New("rate limit exceeded")
+		}
+
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, fmt.Errorf("could not unmarshal error response: %w\n%s", err, string(bodyBytes))
 		}
 		return nil, fmt.Errorf("error status returned: %w", dest)
 

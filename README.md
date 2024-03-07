@@ -19,9 +19,11 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
     - [  ] "download" binary mit bubble tea
         - [x] Spinner von https://github.com/charmbracelet/bubbletea/blob/master/examples/realtime/main.go
         - [x] Statusleiste von https://github.com/charmbracelet/bubbletea/tree/master/examples/progress-static
-        - [  ] Zwischenmeldungen von https://github.com/charmbracelet/bubbletea/tree/master/examples/tui-daemon-combo
+        - [x] Zwischenmeldungen von https://github.com/charmbracelet/bubbletea/tree/master/examples/tui-daemon-combo
         - [x] Endmeldung von https://github.com/charmbracelet/bubbletea/tree/master/examples/package-manager
     - [  ] Memory Usage benchmarken
+    - [x] Schnelleres fetchen von Plenarprotokoll
+        - [x] Erkentniss: Man wird ziemlich schnell rate-limited. Lieber so belassen.
 - [  ] Fuzzy Finder Implementierungen
     - [  ] Interface definieren
         - [  ] Naive Text-suche durch Datei
@@ -37,3 +39,7 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
 ```
 go test -run='^$' -bench=. -count=10 ./..
 ```
+
+
+Plenarprotokolltexte nach ID
+    https://search.dip.bundestag.de/api/v1/plenarprotokoll-text?apikey=rgsaY4U.oZRQKUHdJhF9qguHMkwCGIoLaqEcaHjYLF&f.id=1
