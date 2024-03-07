@@ -128,7 +128,7 @@ func (m model) View() string {
 }
 
 func main() {
-	count, err := dip.NewClient().GetTotalProtokollCount()
+	count, err := dip.NewClient().GetProtokollCount()
 	if err != nil {
 		panic(err) // TODO
 	}

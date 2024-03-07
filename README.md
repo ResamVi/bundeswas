@@ -31,3 +31,9 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
 - [  ] Wunschliste
     - [  ] Beim dritten Query in client.go schreiben wir uns helper Funktionen...
     - [  ] Responsives Frontend
+
+
+
+```
+go test -run='^$' -bench=. -count=10 ./..
+```

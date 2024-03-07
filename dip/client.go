@@ -56,28 +56,34 @@ func (c *Client) WithKey(url string) *Client {
 	return c
 }
 
-func (c *Client) GetTotalProtokoll(downloads chan []PlenarprotokollText, count int) error {
-	cursor := ""
-	current := 0
-	for {
-		resp, err := c.GetProtokolle(cursor)
-		if err != nil {
+func (c *Client) DownloadProtokolle(count int) chan PlenarprotokollText {
+	downloads := make(chan PlenarprotokollText, 100)
+	go func() {
+		cursor := ""
+		current := 0
+		for {
+			resp, err := c.GetProtokolle(cursor)
+			if err != nil {
+				panic(err) // TODO:
+			}
+			cursor = resp.Cursor
+			current += len(resp.Documents)
+			for _, document := range resp.Documents {
+				downloads <- document
+			}
 
+			if len(resp.Documents) == 0 || current > count {
+				close(downloads)
+				break
+			}
 		}
-		cursor = resp.Cursor
-		current += resp.NumFound
-		downloads <- resp.Documents
+	}()
 
-		if len(resp.Documents) == 0 || current > count {
-			break
-		}
-	}
-
-	return nil
+	return downloads
 }
 
-// GetTotalProtokollCount returns the total amount of Plenarprotokolle available.
-func (c *Client) GetTotalProtokollCount() (int, error) {
+// GetProtokollCount returns the total amount of Plenarprotokolle available.
+func (c *Client) GetProtokollCount() (int, error) {
 	requestURL, err := url.Parse(c.URL + "/plenarprotokoll-text")
 	if err != nil {
 		return 0, err
