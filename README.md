@@ -15,13 +15,12 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
 - [  ] Frontend
     - [x] Use template
     - [  ] Retrieve results from backend
-- [  ] Handgeschriebener Client
-    - [  ] "download" binary mit bubble tea
+- [x] Handgeschriebener Client
+    - [x] "download" binary mit bubble tea
         - [x] Spinner von https://github.com/charmbracelet/bubbletea/blob/master/examples/realtime/main.go
         - [x] Statusleiste von https://github.com/charmbracelet/bubbletea/tree/master/examples/progress-static
         - [x] Zwischenmeldungen von https://github.com/charmbracelet/bubbletea/tree/master/examples/tui-daemon-combo
         - [x] Endmeldung von https://github.com/charmbracelet/bubbletea/tree/master/examples/package-manager
-    - [  ] Memory Usage benchmarken
     - [x] Schnelleres fetchen von Plenarprotokoll
         - [x] Erkentniss: Man wird ziemlich schnell rate-limited. Lieber so belassen.
 - [  ] Fuzzy Finder Implementierungen
@@ -33,6 +32,7 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
 - [  ] Wunschliste
     - [  ] Beim dritten Query in client.go schreiben wir uns helper Funktionen...
     - [  ] Responsives Frontend
+    - [  ] Memory Usage benchmarken
 
 
 
