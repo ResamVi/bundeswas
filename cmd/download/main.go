@@ -13,53 +13,42 @@ import (
 	"github.com/resamvi/bundeswas/dip"
 )
 
+func main() {
+	store, err := NewStore()
+	if err != nil {
+		fmt.Println("could not start program:", err)
+		os.Exit(1)
+	}
+
+	p := tea.NewProgram(model{
+		spinner:  spinner.New(),
+		progress: progress.New(),
+
+		store:      store,
+		start:      time.Now(),
+		totalCount: 1, // Avoid division by zero
+		dashboard:  make([]string, 3),
+		downloads:  make(chan dip.PlenarprotokollText),
+	})
+
+	if _, err := p.Run(); err != nil {
+		fmt.Println("could not start program:", err)
+		os.Exit(1)
+	}
+}
+
 type model struct {
 	progress progress.Model
 	spinner  spinner.Model
 
 	start        time.Time
-	downloaded   chan dip.PlenarprotokollText
+	store        *Store
+	downloads    chan dip.PlenarprotokollText
 	currentCount int
 	totalCount   int
 	percent      float64
 	done         bool
-	results      []string
-}
-
-type prepareMsg struct{ count int }
-
-func prepareDownload() tea.Cmd {
-	return func() tea.Msg {
-		count, err := dip.NewClient().GetCount()
-		if err != nil {
-			panic(err) // TODO: Return
-		}
-
-		return prepareMsg{count: count}
-	}
-}
-
-// A command that starts downloadign Plenarprotokolle and forwards them to a channel.
-func downloadPlenarprotokolle(downloads chan dip.PlenarprotokollText) tea.Cmd {
-	return func() tea.Msg {
-		stream := dip.NewClient().DownloadProtokolle()
-		for document := range stream {
-			downloads <- document
-		}
-
-		return tea.Quit
-	}
-}
-
-// Indicate that new Plenarprotokolle were downloaded.
-type downloadMsg struct{ id string }
-
-// A command that listens for downloaded Plenarprotokolle and sends a message to render an update.
-func waitForMore(downloads chan dip.PlenarprotokollText) tea.Cmd {
-	return func() tea.Msg {
-		d := <-downloads
-		return downloadMsg{id: d.Id}
-	}
+	dashboard    []string
 }
 
 func (m model) Init() tea.Cmd {
@@ -70,8 +59,8 @@ func (m model) Init() tea.Cmd {
 		// Download
 		tea.Batch(
 			m.spinner.Tick,
-			downloadPlenarprotokolle(m.downloaded),
-			waitForMore(m.downloaded),
+			downloadPlenarprotokolle(m.downloads),
+			waitForMore(m.downloads, m.store),
 		),
 	)
 }
@@ -88,18 +77,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Listen for answer to how many documents exist ("preparation").
 	case prepareMsg:
 		m.totalCount = msg.count
-		return m, waitForMore(m.downloaded)
+		return m, waitForMore(m.downloads, m.store)
 
 	// Listen for newly downloaded Plenarprotokolle and count up progress.
 	case downloadMsg:
 		m.currentCount++
-		m.results = append(m.results[1:], msg.id)
+		m.dashboard = append(m.dashboard[1:], msg.id)
 
 		if m.currentCount == m.totalCount {
 			m.done = true
+			m.store.Close()
 			return m, tea.Quit
 		}
-		return m, waitForMore(m.downloaded) // wait for next event
+		return m, waitForMore(m.downloads, m.store) // wait for next event
 
 	// Listen for when window is resized.
 	case tea.WindowSizeMsg:
@@ -139,7 +129,7 @@ func (m model) View() string {
 	progress := "\n" +
 		pad + m.progress.ViewAs(percentage) + "\n\n"
 
-	for _, id := range m.results {
+	for _, id := range m.dashboard {
 		if id == "" {
 			progress += pad + "........................\n"
 		} else {
@@ -152,19 +142,70 @@ func (m model) View() string {
 	return s + progress
 }
 
-func main() {
-	p := tea.NewProgram(model{
-		spinner:  spinner.New(),
-		progress: progress.New(),
+type prepareMsg struct{ count int }
 
-		start:      time.Now(),
-		totalCount: 1, // Avoid division by zero
-		results:    make([]string, 3),
-		downloaded: make(chan dip.PlenarprotokollText),
-	})
+func prepareDownload() tea.Cmd {
+	return func() tea.Msg {
+		count, err := dip.NewClient().GetCount()
+		if err != nil {
+			panic(err) // TODO: Return
+		}
 
-	if _, err := p.Run(); err != nil {
-		fmt.Println("could not start program:", err)
-		os.Exit(1)
+		return prepareMsg{count: count}
 	}
+}
+
+// A command that starts downloadign Plenarprotokolle and forwards them to a channel.
+func downloadPlenarprotokolle(downloads chan dip.PlenarprotokollText) tea.Cmd {
+	return func() tea.Msg {
+		stream := dip.NewClient().DownloadProtokolle()
+		for document := range stream {
+			downloads <- document
+		}
+
+		return tea.Quit
+	}
+}
+
+// Indicate that new Plenarprotokolle were downloaded.
+type downloadMsg struct{ id string }
+
+// A command that listens for downloaded Plenarprotokolle and sends a message to render an update.
+func waitForMore(downloads chan dip.PlenarprotokollText, store *Store) tea.Cmd {
+	return func() tea.Msg {
+		document := <-downloads
+		store.Insert(document)
+		return downloadMsg{id: document.Id}
+	}
+}
+
+// Storer implements logic to write Plenarprotokolle to a file.
+func NewStore() (*Store, error) {
+	f, err := os.Create("./protokolle.txt")
+	if err != nil {
+		return nil, fmt.Errorf("could not create file for storing")
+	}
+
+	return &Store{file: f}, nil
+}
+
+type Store struct {
+	file *os.File
+}
+
+func (s Store) Insert(protokoll dip.PlenarprotokollText) error {
+	if protokoll.Text == nil {
+		return fmt.Errorf("Plenarprotokoll without text found: %+v", protokoll)
+	}
+
+	_, err := s.file.WriteString(*protokoll.Text + "\n\n\n")
+	if err != nil {
+		return fmt.Errorf("could not write to file: %w", err)
+	}
+
+	return nil
+}
+
+func (s Store) Close() error {
+	return s.file.Close()
 }

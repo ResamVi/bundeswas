@@ -21,14 +21,24 @@ Benutzt die [API des Dokumentations- und Informationssystems für Parlamentsmate
         - [x] Statusleiste von https://github.com/charmbracelet/bubbletea/tree/master/examples/progress-static
         - [x] Zwischenmeldungen von https://github.com/charmbracelet/bubbletea/tree/master/examples/tui-daemon-combo
         - [x] Endmeldung von https://github.com/charmbracelet/bubbletea/tree/master/examples/package-manager
+        - [ ] Choice von https://github.com/charmbracelet/bubbletea/tree/master/examples/result
+        - [ ] Zeitmessung von https://github.com/charmbracelet/bubbletea/tree/master/examples/stopwatch
+        - [ ] Zwei Ansichten von https://github.com/charmbracelet/bubbletea/tree/master/examples/views
     - [x] Schnelleres fetchen von Plenarprotokoll
         - [x] Erkentniss: Man wird ziemlich schnell rate-limited. Lieber so belassen.
 - [  ] Fuzzy Finder Implementierungen
-    - [  ] Interface definieren
+    - [x] Interface definieren
         - [  ] Naive Text-suche durch Datei
         - [  ] Mit Postgres
         - [  ] Mit Solr
         - [  ] Mit ElasticSearch
+- [  ] Server mit API
+    - [  ] Websocket Endpunkt
+    - [  ] GET HTTP Endpunkt
+    - [  ] CORS
+    - [  ] Setup mit Environment Variables
+    - [  ] Containerisiert
+
 - [  ] Wunschliste
     - [  ] Beim dritten Query in client.go schreiben wir uns helper Funktionen...
     - [  ] Responsives Frontend
