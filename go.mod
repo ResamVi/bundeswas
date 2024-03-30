@@ -29,4 +29,5 @@ require (
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	nhooyr.io/websocket v1.8.10 // indirect
 )
