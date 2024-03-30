@@ -1,15 +1,7 @@
 <template>
-	<!-- Navbar start -->
 	<navbar-element></navbar-element>
-	<!-- Navbar end -->
-
-	<!-- Rendered view start -->
 	<home-view></home-view>
-	<!-- Rendered view end -->
-
-	<!-- Footer start -->
 	<footer-element></footer-element>
-	<!-- Footer end -->
 </template>
 
 <script>
@@ -26,6 +18,4 @@ export default {
 }
 </script>
 
-<style>
-
-</style>
+<style> </style>
